@@ -17,7 +17,9 @@ source=(
   'linux-aarch64-pkgbase-shim'
   'README.package.md'
 )
-sha256sums=('SKIP' 'SKIP' 'SKIP')
+sha256sums=('1258b83a558987eb24134a3389966e58cb6ef5237709bcb29f2bc837781397cc'
+            '7cbd76958c4c92b485c0c8595cfbf73dd3c7164bcc62f9dce3b0817818e09e89'
+            '5ab61d11e873d3a36aba6cd0ec3072ba07ef83fa9babb871d62d2887be0f9810')
 
 package() {
   install -Dm644 85-linux-aarch64-pkgbase-shim.hook "${pkgdir}/usr/share/libalpm/hooks/85-linux-aarch64-pkgbase-shim.hook"
