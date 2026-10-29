@@ -21,7 +21,12 @@ source=(
   'dell-xps-touchpad-haptics.install'
   'dell-xps-touchpad-haptics.service'
 )
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+sha256sums=('6666c37fcae6b746ae9f480eea4685d4a7adca7aefb5090ec29fc901c6d4e6ec'
+            'df95f8d20de1d04cba5e67f42a033c9e2c1beca2f2e615e250575e2ddfcf0f77'
+            'e98dc2fdb728ab676b17168ee1a691a50a8280b6e3c3f808b767ca64d9b49f71'
+            '08da5275d8e8abe2e263e742c0cd86283c7fe526fb739d6cbfff7c389de25b72'
+            '0ca571314ebc50cf86d7c732355307262d6b676a1dbb37eebffc571bf582e86a'
+            '27620391718a115dccc728e41276cf70467c723d6fa2a8c222e44cad2e71242a')
 
 package() {
   install -Dm644 99-dell-xps-touchpad-haptics.rules "${pkgdir}/usr/lib/udev/rules.d/99-dell-xps-touchpad-haptics.rules"
