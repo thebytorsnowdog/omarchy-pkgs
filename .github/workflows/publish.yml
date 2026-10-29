@@ -425,7 +425,10 @@ jobs:
           RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
-          curl -fsSL https://downloads.rclone.org/rclone-current-linux-amd64.zip -o rclone.zip && unzip -jq rclone.zip '*/rclone' && chmod +x rclone
+          curl -fsSL -o rclone.zip https://downloads.rclone.org/v1.75.2/rclone-v1.75.2-linux-amd64.zip
+          echo "349ac8fba6ff65d6247043f1750cdcb518ec5d500ef91463a10d37c0ccdf3702  rclone.zip" | sha256sum -c -
+          unzip -jq rclone.zip '*/rclone'
+          chmod +x rclone
           # One JSON object per line, newest last. Served at
           # https://pkgs.omarchy.org/publish-log.jsonl
           ./rclone copy R2:omarchy-pkgs/publish-log.jsonl . --s3-no-head 2>/dev/null || : > publish-log.jsonl
