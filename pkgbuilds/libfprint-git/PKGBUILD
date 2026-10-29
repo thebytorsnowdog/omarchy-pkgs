@@ -57,7 +57,7 @@ source=(
 source_aarch64=("aurora-apple-sep.patch")
 b2sums=(
   'SKIP'
-  'SKIP'
+  'ebde45efd5306bd00e8f18e894da5ed4a1c3d1cff88ca7dd50893b2193cd0a262ae737af200d935271a5c85dcd7567c7d8b3b8a89d1b0870fa6e9e854115a2cb'
 )
 b2sums_aarch64=('ec577996066baf6db6d741763abd681aae5556d52a8b67f7a52a60a4df7015c5d1edf3637835e563b2fb0edde2499173d61c50717b621f6bddf94a1f700075e5')
 
