@@ -16,7 +16,8 @@ source=(
   'qcom-firmware-extract'
   'README.package.md'
 )
-sha256sums=('SKIP' 'SKIP')
+sha256sums=('c04b78934a87c8ac2142aa3468f269a53ca59b59d32193e5ee46245759234629'
+            'f85b5b8069344ccd0264864f18b456098fda76e981ca430b49a145e30b5714ba')
 
 package() {
   install -Dm755 qcom-firmware-extract "${pkgdir}/usr/bin/qcom-firmware-extract"
