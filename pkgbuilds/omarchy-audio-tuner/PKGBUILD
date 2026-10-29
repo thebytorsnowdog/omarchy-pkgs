@@ -1,7 +1,7 @@
 # Maintainer: David Heinemeier Hansson <david@hey.com>
 pkgname=omarchy-audio-tuner
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Tools for authoring Omarchy laptop speaker tunings"
 arch=('any')
 url="https://github.com/omacom-io/omarchy-audio-tuner"
@@ -12,7 +12,9 @@ options=('!debug')
 # it is needed to audition the result and not only to author it.
 depends=('bash' 'python' 'ffmpeg' 'mpv' 'libpulse' 'lsp-plugins-lv2')
 makedepends=('git')
-source=("git+https://github.com/omacom-io/omarchy-audio-tuner.git#tag=v$pkgver")
+# v0.1.0 is a lightweight tag of this commit. A tag can move; a git source cannot carry a checksum.
+_commit=af7d91c4fac4c798bfeea358d64151c7496b3c33
+source=("git+https://github.com/omacom-io/omarchy-audio-tuner.git#commit=${_commit}")
 sha256sums=('SKIP')
 
 package() {
