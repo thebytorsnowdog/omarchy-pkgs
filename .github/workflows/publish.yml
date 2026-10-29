@@ -38,7 +38,7 @@ jobs:
       rebuild: ${{ steps.list.outputs.rebuild }}
       rebuild_count: ${{ steps.list.outputs.rebuild_count }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -114,7 +114,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.changes.outputs.rebuild) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       # The same check the publish job makes before building: a re-run for a
@@ -144,7 +144,7 @@ jobs:
           echo "label=${{ matrix.package }}-${{ matrix.arch }}-$(git rev-parse "HEAD:pkgbuilds/${{ matrix.package }}")" >> "$GITHUB_OUTPUT"
       - name: Upload artifact
         if: steps.build.outputs.built == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ${{ steps.pack.outputs.label }}
           path: packages.tar
@@ -176,7 +176,7 @@ jobs:
       cancel-in-progress: false
       queue: max
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
 
@@ -374,7 +374,7 @@ jobs:
 
       - name: Keep the publish record
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: publish-record-${{ github.run_id }}
           path: publish-record.json
@@ -393,7 +393,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: publish-record-${{ github.run_id }}
       - name: Render
