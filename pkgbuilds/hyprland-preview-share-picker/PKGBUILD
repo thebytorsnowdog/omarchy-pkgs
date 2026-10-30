@@ -16,7 +16,7 @@ _protocols_commit=3a5c2bda1c1a4e55cc1330c782547695a93f05b2
 source=("$pkgname-$pkgver.tar.gz::https://github.com/WhySoBad/hyprland-preview-share-picker/archive/refs/tags/v$pkgver.tar.gz"
         "hyprland-protocols-$_protocols_commit.tar.gz::https://github.com/hyprwm/hyprland-protocols/archive/$_protocols_commit.tar.gz")
 sha256sums=('dfbd6773884c24bb300d756420cc540dda0c3518e910e20d1538e7dd6c0990da'
-            'SKIP')
+            '00b2f15b8f383da4b6d111333c184a599ed5a9f51111243d0a88ddf7d7e498fb')
 
 prepare() {
     cd "$pkgname-$pkgver"
