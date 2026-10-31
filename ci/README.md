@@ -1,13 +1,17 @@
 # The x86_64 builder pool
 
-x86_64 package builds run on DigitalOcean droplets that exist for one job
-each. aarch64 builds run on GitHub's `ubuntu-24.04-arm` runners and need
-nothing here.
+On omacom/omarchy-pkgs, x86_64 package builds run on DigitalOcean droplets
+that exist for one job each. Any other repository runs those jobs on
+GitHub-hosted `ubuntu-24.04` and does not use this pool. aarch64 builds run
+on GitHub's `ubuntu-24.04-arm` runners and need nothing here.
 
 ## How it works
 
-- **Jobs ask for a runner labelled `omarchy-builder`.** `build-pr.yml` builds
-  x86_64 packages there, and so does the `rebuild` job in `publish.yml`.
+- **On omacom/omarchy-pkgs, jobs ask for a runner labelled `omarchy-builder`.**
+  `build-pr.yml` builds x86_64 packages there, and so does the `rebuild` job
+  in `publish.yml`. Other repositories ask for `ubuntu-24.04` instead. A
+  missing self-hosted label stays queued until GitHub cancels the job.
+  `timeout-minutes` does not cover that wait.
 - **A controller creates one droplet per queued job.** `controller.sh` runs
   from a systemd timer every minute on a small always-on droplet (tag
   `omarchy-controller`). It polls GitHub for queued jobs with the label and
