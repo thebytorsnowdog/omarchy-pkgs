@@ -1,9 +1,11 @@
 name: Build changed packages
 
-# Build every package directory a PR touches, one job per package per arch:
-# x86_64 on the self-hosted droplet pool, aarch64 natively on GitHub's arm64
-# runners. Artifacts are unsigned; publish.yml signs and publishes them on
-# merge.
+# Build every package directory a PR touches, one job per package per arch.
+# On omacom/omarchy-pkgs, x86_64 uses the self-hosted droplet pool. Every
+# other repository uses GitHub-hosted ubuntu-24.04, so a fork with no
+# omarchy-builder runner starts the job instead of waiting in the queue.
+# aarch64 always uses GitHub's arm64 runners. Artifacts are unsigned.
+# publish.yml signs and publishes them on merge.
 #
 # Tooling runs from the base branch; a PR supplies only pkgbuilds/. The
 # vouch gate limits who may spend compute; this limits what their PR can run.
@@ -182,7 +184,11 @@ jobs:
     # took 2h47m of the 180 minutes, most of it in check().
     # GitHub's arm64 runners (4 vCPU, 16 GB; ~100 GB disk free in our pilots)
     # build it natively in 11 minutes, and linux-aurora in 30 (72 under QEMU).
-    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","omarchy-builder"]') }}
+    # x86_64 stays on that pool only for omacom/omarchy-pkgs. Elsewhere it
+    # uses ubuntu-24.04, the hosted image that already builds the x86 builder
+    # image. A missing omarchy-builder label never leaves the queue, and
+    # timeout-minutes does not start until a runner accepts the job.
+    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || (github.repository == 'omacom/omarchy-pkgs' && fromJSON('["self-hosted","omarchy-builder"]') || 'ubuntu-24.04') }}
     timeout-minutes: 180
     strategy:
       fail-fast: false

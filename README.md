@@ -135,8 +135,10 @@ pkgs.omarchy.org        served from the R2 bucket omarchy-pkgs through a CDN
 To ship a change: open a PR, wait for green, merge. Nothing else is needed.
 
 1. **Build.** `build-pr.yml` builds every package directory the PR touches,
-   once, against `edge`. x86_64 builds on an ephemeral DigitalOcean droplet
-   (runner label `omarchy-builder`), aarch64 on GitHub's `ubuntu-24.04-arm`.
+   once, against `edge`. On omacom/omarchy-pkgs, x86_64 builds on an
+   ephemeral DigitalOcean droplet (runner label `omarchy-builder`). Any other
+   repository builds x86_64 on GitHub-hosted `ubuntu-24.04`. aarch64 builds
+   on GitHub's `ubuntu-24.04-arm` either way.
    Each build is kept as a workflow artifact for 7 days, named
    `<package>-<arch>-<git tree hash of the package directory>`.
 2. **Merge.** Branch protection requires `result`, `self-tests` and
