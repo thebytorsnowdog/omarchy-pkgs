@@ -95,9 +95,17 @@ jobs:
       - id: list
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # workflow_dispatch packages is caller-controlled. The environment
+          # passes it through as data; inlining it would run it on the runner.
+          PACKAGES: ${{ github.event.inputs.packages }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          if [[ -n "${{ github.event.inputs.packages }}" ]]; then
-            names="${{ github.event.inputs.packages }}"
+          set -euo pipefail
+          if [[ -n "${PACKAGES:-}" ]]; then
+            names=$PACKAGES
           else
             # The PR's own files, as GitHub lists them against the merge base.
             # A two-dot diff against the current base tip also counted every
@@ -105,10 +113,10 @@ jobs:
             # planned dozens of unrelated packages at its old versions. The
             # checkout here is shallow, so there is no merge base to diff from.
             # A package the PR deletes has nothing to build.
-            names=$(gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[].filename' \
+            names=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[].filename' \
               | awk -F/ '$1=="pkgbuilds" && NF>2 {print $2}' | sort -u \
               | while read -r name; do
-                  if git cat-file -e "${{ github.event.pull_request.head.sha }}:pkgbuilds/$name" 2>/dev/null; then echo "$name"; fi
+                  if git cat-file -e "${HEAD_SHA}:pkgbuilds/$name" 2>/dev/null; then echo "$name"; fi
                 done)
           fi
           matrix=$(printf '%s\n' $names | bin/build-matrix)
@@ -118,14 +126,14 @@ jobs:
           # that touches fifty rebuilds one, not fifty; publish.yml finds the
           # same artifacts on merge. workflow_dispatch is an explicit request
           # and always builds.
-          if [[ "${{ github.event_name }}" == pull_request ]]; then
-            head="${{ github.event.pull_request.head.sha }}"
+          if [[ "$EVENT_NAME" == pull_request ]]; then
+            head="$HEAD_SHA"
             kept=(); reused=()
             while read -r entry; do
               package=$(jq -r .package <<<"$entry"); arch=$(jq -r .arch <<<"$entry")
               label="$package-$arch-$(git rev-parse "$head:pkgbuilds/$package")"
               found=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
-                "https://api.github.com/repos/${{ github.repository }}/actions/artifacts?name=$label&per_page=5" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=$label&per_page=5" \
                 | jq -r '[.artifacts[] | select(.expired|not)] | length' || echo 0)
               if (( found > 0 )); then reused+=("$label"); else kept+=("$entry"); fi
             done < <(jq -c '.include[]' <<<"$matrix")
@@ -142,8 +150,8 @@ jobs:
           # content already landed some other way (a sync PR beat it, or a
           # merge from master swallowed it). Merging it would record a change
           # that isn't one. Flag it so `result` fails rather than passes.
-          if [[ "${{ github.event_name }}" == pull_request ]]; then
-            total=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" | wc -l)
+          if [[ "$EVENT_NAME" == pull_request ]]; then
+            total=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | wc -l)
             echo "empty=$([[ $total -eq 0 ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
             echo "files changed vs base: $total"
           else

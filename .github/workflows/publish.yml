@@ -45,12 +45,18 @@ jobs:
       - id: list
         env:
           GH_TOKEN: ${{ github.token }}
+          # Caller-controlled on workflow_dispatch. Kept in the environment so
+          # the shell does not parse it. This job's matrix is read by the
+          # publish job, which has the signing key and the bucket credentials.
+          PACKAGES: ${{ github.event.inputs.packages }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          if [[ -n "${{ github.event.inputs.packages }}" ]]; then
-            names="${{ github.event.inputs.packages }}"
+          if [[ -n "$PACKAGES" ]]; then
+            names=$PACKAGES
           else
-            names=$(git diff --name-only "${{ github.event.before }}..${{ github.sha }}" -- pkgbuilds \
+            names=$(git diff --name-only "$BEFORE..$SHA" -- pkgbuilds \
               | awk -F/ '$1=="pkgbuilds" && NF>2 {print $2}' | sort -u)
           fi
           matrix=$(printf '%s\n' $names | bin/build-matrix)
@@ -179,6 +185,10 @@ jobs:
       group: publish
       cancel-in-progress: false
       queue: max
+    env:
+      # The changes job writes this. It stays data here: the publish step's
+      # shell would run it if the JSON were pasted into the script.
+      PLAN_MATRIX: ${{ needs.changes.outputs.matrix }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -189,9 +199,7 @@ jobs:
       - name: Plan
         run: |
           jq -r '.include[] | "\(.package) \(.arch) \(.channels|gsub(" ";",")) \(.publish_arches|gsub(" ";","))"' \
-            <<'EOF_MATRIX' > plan.txt
-          ${{ needs.changes.outputs.matrix }}
-          EOF_MATRIX
+            <<<"$PLAN_MATRIX" > plan.txt
           cat plan.txt
 
       # Fetch each package's artifact into build-output/edge/<arch>/: the PR's,
@@ -259,7 +267,7 @@ jobs:
             # Write the record now; the publish step will not run.
             jq -n --arg sha "${{ github.sha }}" --arg run "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
               --arg prefix "${OMARCHY_PUBLISH_PREFIX:-}" --arg event "${{ github.event_name }}" \
-              --slurpfile sources sources.jsonl --slurpfile plan <(jq -c '.include[]' <<<'${{ needs.changes.outputs.matrix }}' | jq -sc .) \
+              --slurpfile sources sources.jsonl --slurpfile plan <(jq -c '.include[]' <<<"$PLAN_MATRIX" | jq -sc .) \
               '{time: (now|todate), commit:$sha, run:$run, event:$event, target: (if $prefix=="" then "live" else $prefix end), plan:$plan[0], sources:$sources, slots:[]}' \
               > publish-record.json
             cat publish-record.json
@@ -287,7 +295,7 @@ jobs:
             echo "Nothing to publish: every requested package is already published at master's version."
             jq -n --arg sha "${{ github.sha }}" --arg run "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
               --arg prefix "${OMARCHY_PUBLISH_PREFIX:-}" --arg event "${{ github.event_name }}" \
-              --slurpfile sources sources.jsonl --slurpfile plan <(jq -c '.include[]' <<<'${{ needs.changes.outputs.matrix }}' | jq -sc .) \
+              --slurpfile sources sources.jsonl --slurpfile plan <(jq -c '.include[]' <<<"$PLAN_MATRIX" | jq -sc .) \
               '{time: (now|todate), commit:$sha, run:$run, event:$event, target: (if $prefix=="" then "live" else $prefix end), plan:$plan[0], sources:$sources, slots:[]}' \
               > publish-record.json
             cat publish-record.json
@@ -370,7 +378,7 @@ jobs:
           done
           jq -n --arg sha "${{ github.sha }}" --arg run "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --arg prefix "${OMARCHY_PUBLISH_PREFIX:-}" --arg event "${{ github.event_name }}" \
-            --slurpfile slots slots.jsonl --slurpfile sources sources.jsonl --slurpfile plan <(jq -c '.include[]' <<<'${{ needs.changes.outputs.matrix }}' | jq -sc .) \
+            --slurpfile slots slots.jsonl --slurpfile sources sources.jsonl --slurpfile plan <(jq -c '.include[]' <<<"$PLAN_MATRIX" | jq -sc .) \
             '{time: (now|todate), commit:$sha, run:$run, event:$event, target: (if $prefix=="" then "live" else $prefix end), plan:$plan[0], sources:$sources, slots:$slots}' \
             > publish-record.json
           cat publish-record.json
