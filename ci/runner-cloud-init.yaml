@@ -10,7 +10,9 @@
 #   __REPO__            owner/name
 #   __RUNNER_TOKEN__    registration token (gh api -X POST repos/O/R/actions/runners/registration-token)
 #   __RUNNER_LABELS__   e.g. omarchy-builder
-#   __RUNNER_VERSION__  e.g. 2.329.0
+#   __RUNNER_VERSION__       e.g. 2.337.0
+#   __RUNNER_SHA256_X64__    sha256 of actions-runner-linux-x64 for that version
+#   __RUNNER_SHA256_ARM64__  sha256 of actions-runner-linux-arm64 for that version
 
 # Operators can reach a builder by key while it lives; it powers off after
 # one job anyway. Keys are substituted by the controller (__SSH_KEYS_JSON__).
@@ -54,9 +56,15 @@ write_files:
       trap 'sudo poweroff' EXIT
       cd /home/runner
       mkdir -p actions-runner && cd actions-runner
-      arch=$(uname -m); [[ $arch == x86_64 ]] && arch=x64
+      arch=$(uname -m)
+      case "$arch" in
+        x86_64) arch=x64; sum="__RUNNER_SHA256_X64__" ;;
+        aarch64|arm64) arch=arm64; sum="__RUNNER_SHA256_ARM64__" ;;
+        *) echo "no pinned runner checksum for $arch" >&2; exit 1 ;;
+      esac
       curl -fsSL -o runner.tgz \
         "https://github.com/actions/runner/releases/download/v__RUNNER_VERSION__/actions-runner-linux-${arch}-__RUNNER_VERSION__.tar.gz"
+      echo "$sum  runner.tgz" | sha256sum -c -
       tar xzf runner.tgz && rm runner.tgz
       ./config.sh --unattended --ephemeral \
         --url "https://github.com/__REPO__" \

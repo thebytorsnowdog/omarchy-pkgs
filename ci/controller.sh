@@ -36,6 +36,10 @@ MAX_AGE_MINUTES=${MAX_AGE_MINUTES:-200}
 # queued job until MAX_AGE_MINUTES.
 MAX_BOOT_MINUTES=${MAX_BOOT_MINUTES:-10}
 RUNNER_VERSION=${RUNNER_VERSION:-2.337.0}
+# Official actions/runner v2.337.0 release assets. The cloud-init script
+# checks the tarball before it unpacks it. Set both when changing RUNNER_VERSION.
+RUNNER_SHA256_X64=${RUNNER_SHA256_X64:-70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613}
+RUNNER_SHA256_ARM64=${RUNNER_SHA256_ARM64:-9b1dc70626422526e3c94767cf024896beb15da5342a3f4819bf2feac13e0393}
 CLOUD_INIT=${CLOUD_INIT:-$(dirname "$0")/runner-cloud-init.yaml}
 # Operator public keys authorized on every builder (JSON array of strings).
 # The box's env file carries them; empty means no root login.
@@ -153,6 +157,8 @@ create_droplet() {
   token=$(gh_api "repos/$REPO/actions/runners/registration-token" -X POST | jq -r .token)
   userdata=$(sed -e "s|__REPO__|$REPO|g" -e "s|__RUNNER_TOKEN__|$token|g" \
                  -e "s|__RUNNER_LABELS__|$LABEL|g" -e "s|__RUNNER_VERSION__|$RUNNER_VERSION|g" \
+                 -e "s|__RUNNER_SHA256_X64__|$RUNNER_SHA256_X64|g" \
+                 -e "s|__RUNNER_SHA256_ARM64__|$RUNNER_SHA256_ARM64|g" \
                  -e "s|__SSH_KEYS_JSON__|$SSH_KEYS_JSON|" "$CLOUD_INIT")
   name="$TAG-$(date +%s)-$RANDOM"
   while read -r size region; do
