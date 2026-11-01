@@ -9,6 +9,9 @@ name: Build changed packages
 #
 # Tooling runs from the base branch; a PR supplies only pkgbuilds/. The
 # vouch gate limits who may spend compute; this limits what their PR can run.
+#
+# Token scopes match the runs of 29 Oct 2026: contents: read and
+# packages: read. The build job uploads artifacts with that token.
 
 # No paths filter: approved PRs must report the required `result` even when
 # no package directory changed. Those PRs get an empty matrix and a passing
@@ -34,6 +37,10 @@ on:
 concurrency:
   group: build-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ !(github.event.pull_request.head.repo.full_name == github.repository && (startsWith(github.head_ref, 'auto/sync-') || startsWith(github.head_ref, 'auto/track-branches'))) }}
+
+permissions:
+  contents: read
+  packages: read
 
 jobs:
   # Builds cost real machines, so they run only for trusted authors:

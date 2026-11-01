@@ -130,6 +130,7 @@ jobs:
     needs: [sync, prs]
     if: ${{ failure() }}
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Notify Basecamp on failure
         if: ${{ env.BASECAMP_CHATBOT_URL != '' }}

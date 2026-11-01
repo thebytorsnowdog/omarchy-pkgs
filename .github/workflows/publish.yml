@@ -13,6 +13,12 @@ name: Publish merged packages
 # OMARCHY_PUBLISH_PREFIX (environment variable, not secret) points a proof
 # run at a scratch prefix inside the live bucket; empty means the real
 # channel paths.
+#
+# Token scopes are fixed here. The publish job holds the signing key and
+# the bucket credentials. A repository setting that later grants write
+# must not apply to that job. Runs on 29 Oct 2026 showed contents: read
+# and packages: read, which is what checkout and the public builder image
+# use. The report job replaces this with its own block.
 
 on:
   push:
@@ -28,6 +34,10 @@ on:
 # into one channel at once would race on the database. Builds run outside the
 # lock, so a merge waits behind another merge's signing and upload, seconds,
 # never behind its kernel build.
+
+permissions:
+  contents: read
+  packages: read
 
 jobs:
   changes:
