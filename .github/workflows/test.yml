@@ -4,9 +4,15 @@ name: Tests
 # merged tree: it resolves every package against the live channel and refuses
 # a filename that already exists with different bytes, so two PRs cannot land
 # the same version twice. A post-merge test run would only repeat the PR's.
+#
+# pull_request checks out the PR and runs its scripts, including
+# pkgbuilds/*/test.sh. The token stays contents: read.
 on:
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build-isolation:
@@ -65,6 +71,7 @@ jobs:
               ./tests/settings-runtime-profile.sh
               ./tests/pinned-sources.sh
               ./tests/controller.sh
+              ./tests/workflow-permissions.sh
               ./tests/artifact-helpers.sh
               ./tests/limine-mkinitcpio-hook.sh
               ./tests/voxtype-bin-install.sh
