@@ -28,6 +28,12 @@ if (( $# )); then names=("$@"); else mapfile -t names; fi
 entries=()
 for name in "${names[@]}"; do
   [[ -n "$name" ]] || continue
+  # Workflow run scripts quote this name. A quote or a substitution in it
+  # would run on the runner. Arch pkgnames are this set.
+  if [[ ! "$name" =~ ^[a-z0-9@._+-]+$ ]]; then
+    echo "Invalid package name: $name" >&2
+    exit 1
+  fi
   pkgdir="$PKGBUILDS_DIR/$name"
   [[ -d "$pkgdir" ]] || continue
   # skip_build packages still build on their own PR (explicit --package
