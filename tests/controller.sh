@@ -101,8 +101,8 @@ do_api() {
 }
 gh_api() { echo '{"token":"TOK"}'; }
 CANDIDATES=""; create_droplet >/dev/null
-jq -e '.tags == ["omarchy-builder"] and .size == "g5-32vcpu-64gb-50gb" and (.user_data | test("--token \"TOK\"")) and (.user_data | test("__") | not)' "$BODY_FILE" >/dev/null \
-  && echo "PASS: create body carries tag, size, substituted user-data" \
+jq -e '.tags == ["omarchy-builder"] and .size == "g5-32vcpu-64gb-50gb" and (.user_data | test("--token \"TOK\"")) and (.user_data | contains("70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613")) and (.user_data | contains("sha256sum -c -")) and (.user_data | test("__") | not)' "$BODY_FILE" >/dev/null \
+  && echo "PASS: create body carries tag, size, substituted user-data and the runner checksum" \
   || { echo "FAIL: create body"; jq . "$BODY_FILE" | head -20; exit 1; }
 
 # Account keys reach the create, so DigitalOcean emails no root password.
