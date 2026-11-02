@@ -71,6 +71,7 @@ jobs:
               ./tests/settings-runtime-profile.sh
               ./tests/pinned-sources.sh
               ./tests/workflow-shell.sh
+              ./tests/publish-r2-skip.sh
               ./tests/controller.sh
               ./tests/workflow-permissions.sh
               ./tests/artifact-helpers.sh

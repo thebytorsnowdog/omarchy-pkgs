@@ -148,7 +148,9 @@ To ship a change: open a PR, wait for green, merge. Nothing else is needed.
    it, and publishes it to every channel and architecture the package ships
    to. When no artifact exists it builds one first, in a separate job. It
    reports in a comment on the merged PR and appends to the
-   [publish log](#read-the-publish-log).
+   [publish log](#read-the-publish-log). If `R2_ACCESS_KEY_ID`,
+   `R2_SECRET_ACCESS_KEY`, and `R2_ENDPOINT` are not all set, the upload
+   and the log are skipped and the run still succeeds.
 
 A package is built once and that one file is what every channel serves.
 **A published filename never changes its bytes.** To ship a different build
@@ -265,6 +267,7 @@ curl -fsSL https://pkgs.omarchy.org/stable/aarch64/omarchy.db | bsdtar -tf - | g
 
 A publish run appends one JSON line to
 `https://pkgs.omarchy.org/publish-log.jsonl` when it finishes, newest last.
+That write needs the R2 credentials. Without them the run skips the log.
 A rerun adds another line for the same run. The log records finished runs;
 for a cancelled one, [check the channel](#check-that-a-version-is-live).
 
@@ -276,6 +279,7 @@ for a cancelled one, [check the channel](#check-that-a-version-is-live).
 | `plan` | Every package, architecture and channel the run set out to publish |
 | `sources` | Per package and architecture, where its files came from. Stops at the first one that failed |
 | `slots` | Per channel and architecture attempted: `status`, and `packages` as file names without `.pkg.tar.zst` |
+| `note` | `r2-credentials-missing` when the repository has no R2 secrets and the upload was skipped. Absent otherwise |
 
 `sources[].source` is one of:
 
@@ -502,6 +506,8 @@ signing key and bucket credentials: `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`,
 `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`. Its variable
 `OMARCHY_PUBLISH_PREFIX` redirects publish and unpublish to a scratch prefix
 in the bucket for a proof run; it must be empty for live publishing.
+If any of the three R2 secrets is unset, `publish.yml` skips the upload
+and the publish log instead of failing.
 Repository secrets: `PKGS_BOT_TOKEN`, `BASECAMP_CHATBOT_URL`.
 
 ## More
