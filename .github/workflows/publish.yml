@@ -14,6 +14,13 @@ name: Publish merged packages
 # run at a scratch prefix inside the live bucket; empty means the real
 # channel paths.
 #
+# A repository that has not set all three R2 secrets skips the upload and
+# the publish log, and the workflow still succeeds. The report job still
+# comments on the merged PR. When packages were waiting to upload, that
+# comment says the credentials are missing. Forks do not have the live
+# bucket credentials. Leaving the endpoint empty used to make rclone
+# report NoSuchBucket and fail the run.
+#
 # Token scopes are fixed here. The publish job holds the signing key and
 # the bucket credentials. A repository setting that later grants write
 # must not apply to that job. Runs on 29 Oct 2026 showed contents: read
@@ -311,6 +318,20 @@ jobs:
             cat publish-record.json
             exit 0
           fi
+          # Nothing can be uploaded without the bucket credentials. rclone
+          # with an empty endpoint returns NoSuchBucket and fails the job.
+          # Write the record and stop before any image pull or upload. The
+          # report job still comments on the merged PR.
+          if [[ -z "${RCLONE_CONFIG_R2_ACCESS_KEY_ID:-}" || -z "${RCLONE_CONFIG_R2_SECRET_ACCESS_KEY:-}" || -z "${RCLONE_CONFIG_R2_ENDPOINT:-}" ]]; then
+            echo "::notice::R2 credentials are not set on this repository; skipping publish."
+            jq -n --arg sha "${{ github.sha }}" --arg run "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              --arg prefix "${OMARCHY_PUBLISH_PREFIX:-}" --arg event "${{ github.event_name }}" \
+              --slurpfile sources sources.jsonl --slurpfile plan <(jq -c '.include[]' <<<"$PLAN_MATRIX" | jq -sc .) \
+              '{time: (now|todate), commit:$sha, run:$run, event:$event, target: (if $prefix=="" then "live" else $prefix end), plan:$plan[0], sources:$sources, slots:[], note:"r2-credentials-missing"}' \
+              > publish-record.json
+            cat publish-record.json
+            exit 0
+          fi
           # A fresh runner has no images, and building this one here cost
           # every publish about 100 s (and 20 s more to start a container
           # from it) for the 14 s of signing and upload it is needed for.
@@ -405,7 +426,8 @@ jobs:
   # Tell people what happened. A comment on the merged PR (found by the
   # merge commit, so squash and rebase merges work too) and a line appended
   # to a running JSON log in the bucket, next to the packages it describes,
-  # so the history is public and can be rendered later.
+  # so the history is public and can be rendered later. The log write is
+  # skipped when the R2 secrets are empty. The PR comment still runs.
   report:
     needs: [changes, publish]
     if: always() && needs.publish.result != 'skipped'
@@ -429,11 +451,13 @@ jobs:
             "",
             "Packages: " + ([.sources[] | .package + " (" + .arch + ", " + src + ")"] | join("; ")),
             "",
-            (if (.slots|length) > 0 then (.slots[] | "- `" + .mirror + "/" + .arch + "`: " + (if .status=="published" then "" else "**" + .status + "** " end) + pkgs)
+            (if .note == "r2-credentials-missing" then "_R2 credentials are not set on this repository, so nothing was uploaded._"
+             elif (.slots|length) > 0 then (.slots[] | "- `" + .mirror + "/" + .arch + "`: " + (if .status=="published" then "" else "**" + .status + "** " end) + pkgs)
              elif ([.sources[] | select(.source=="already-published")] | length) == (.sources|length) then "_Nothing to publish: already at master'"'"'s version everywhere._"
              else "_Nothing was published._" end),
             "",
-            (if ([.sources[] | select(.source|test("failed"))] | length) > 0 then "_A build failed, so no channel was touched._\n"
+            (if .note == "r2-credentials-missing" then ""
+             elif ([.sources[] | select(.source|test("failed"))] | length) > 0 then "_A build failed, so no channel was touched._\n"
              elif (.plan|length) > (.slots|length) then "_Some planned slots did not run because an earlier slot failed._\n" else "" end),
             "Commit " + .commit[0:7] + " · [run](" + .run + ")"
           ' publish-record.json > comment.md
@@ -447,6 +471,13 @@ jobs:
           RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
+          # Same check as the publish step. Empty credentials make the
+          # copyto below fail the report job after publish already
+          # succeeded (run 40961748433). Exit before downloading rclone.
+          if [[ -z "${RCLONE_CONFIG_R2_ACCESS_KEY_ID:-}" || -z "${RCLONE_CONFIG_R2_SECRET_ACCESS_KEY:-}" || -z "${RCLONE_CONFIG_R2_ENDPOINT:-}" ]]; then
+            echo "::notice::R2 credentials are not set on this repository; skipping the publish log."
+            exit 0
+          fi
           curl -fsSL -o rclone.zip https://downloads.rclone.org/v1.75.2/rclone-v1.75.2-linux-amd64.zip
           echo "349ac8fba6ff65d6247043f1750cdcb518ec5d500ef91463a10d37c0ccdf3702  rclone.zip" | sha256sum -c -
           unzip -jq rclone.zip '*/rclone'
